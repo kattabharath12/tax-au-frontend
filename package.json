@@ -4,7 +4,7 @@
   "description": "Tax Filing Frontend",
   "main": "index.html",
   "scripts": {
-    "start": "serve -s .",
+    "start": "serve .",
     "build": "echo 'No build step required'"
   },
   "dependencies": {
