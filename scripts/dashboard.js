@@ -217,14 +217,26 @@ async function uploadW9() {
     }
 
     const formData = new FormData();
-    formData.append('w9', file);
+    formData.append('w9Form', file);
 
     try {
-        // Mock upload for now
-        document.getElementById('w9Status').innerHTML = '<div class="status-success">W-9 uploaded successfully!</div>';
+        const response = await fetch(`${API_BASE_URL}/dashboard/upload-w9`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            document.getElementById('w9Status').innerHTML = '<div class="status-success">W-9 uploaded successfully!</div>';
+        } else {
+            document.getElementById('w9Status').innerHTML = '<div class="status-error">Failed to upload W-9</div>';
+        }
     } catch (error) {
         console.error('Error uploading W-9:', error);
-        document.getElementById('w9Status').innerHTML = '<div class="status-error">Failed to upload W-9</div>';
+        document.getElementById('w9Status').innerHTML = '<div class="status-error">Error uploading W-9</div>';
     }
 }
 
@@ -238,10 +250,10 @@ async function uploadW2() {
     }
 
     const formData = new FormData();
-    formData.append('w2', file);
+    formData.append('w2Form', file);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/w2/upload`, {
+        const response = await fetch(`${API_BASE_URL}/dashboard/upload-w2`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -251,14 +263,42 @@ async function uploadW2() {
 
         if (response.ok) {
             const result = await response.json();
-            displayW2Results(result.w2);
             document.getElementById('w2Status').innerHTML = '<div class="status-success">W-2 uploaded successfully!</div>';
+            
+            // Optionally extract W-2 data automatically after upload
+            setTimeout(() => {
+                extractW2Data();
+            }, 1000);
         } else {
-            document.getElementById('w2Status').innerHTML = '<div class="status-error">Failed to upload W-2</div>';
+            const errorData = await response.json();
+            document.getElementById('w2Status').innerHTML = `<div class="status-error">Failed to upload W-2: ${errorData.message || 'Unknown error'}</div>`;
         }
     } catch (error) {
         console.error('Error uploading W-2:', error);
         document.getElementById('w2Status').innerHTML = '<div class="status-error">Error uploading W-2</div>';
+    }
+}
+
+async function extractW2Data() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard/extract-w2`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            displayW2Results(result.data);
+            document.getElementById('w2Status').innerHTML += '<div class="status-success">W-2 data extracted successfully!</div>';
+        } else {
+            const errorData = await response.json();
+            document.getElementById('w2Status').innerHTML += `<div class="status-error">Failed to extract W-2 data: ${errorData.message || 'Unknown error'}</div>`;
+        }
+    } catch (error) {
+        console.error('Error extracting W-2 data:', error);
+        document.getElementById('w2Status').innerHTML += '<div class="status-error">Error extracting W-2 data</div>';
     }
 }
 
@@ -267,43 +307,38 @@ function displayW2Results(w2Data) {
     container.innerHTML = `
         <div class="data-display">
             <h4>W-2 Information</h4>
-            <p><strong>Employer:</strong> ${w2Data.employer}</p>
-            <p><strong>Wages:</strong> $${w2Data.wages}</p>
-            <p><strong>Tax Withheld:</strong> $${w2Data.taxWithheld}</p>
-            <p><strong>Year:</strong> ${w2Data.year}</p>
+            <p><strong>Employee:</strong> ${w2Data.employeeName || 'N/A'}</p>
+            <p><strong>Employer:</strong> ${w2Data.employerName || 'N/A'}</p>
+            <p><strong>Wages (Box 1):</strong> $${w2Data.box1_wages || '0.00'}</p>
+            <p><strong>Federal Tax Withheld (Box 2):</strong> $${w2Data.box2_federalTax || '0.00'}</p>
+            <p><strong>Social Security Wages (Box 3):</strong> $${w2Data.box3_socialSecurityWages || '0.00'}</p>
+            <p><strong>Medicare Wages (Box 5):</strong> $${w2Data.box5_medicareWages || '0.00'}</p>
         </div>
     `;
 
     document.getElementById('w2Results').style.display = 'block';
-    // Store W2 ID for 1098 generation
-    window.currentW2Id = w2Data.id;
 }
 
 async function generate1098() {
-    if (!window.currentW2Id) {
-        alert('Please upload a W-2 first');
-        return;
-    }
-
     try {
-        const response = await fetch(`${API_BASE_URL}/w2/generate1098`, {
+        const response = await fetch(`${API_BASE_URL}/dashboard/generate-1098`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ w2Id: window.currentW2Id })
+            }
         });
 
         if (response.ok) {
             const result = await response.json();
-            display1098Results(result.form1098);
+            display1098Results(result.data);
+            document.getElementById('form1098Status').innerHTML = '<div class="status-success">1098 form generated successfully!</div>';
         } else {
-            alert('Failed to generate 1098 form');
+            const errorData = await response.json();
+            document.getElementById('form1098Status').innerHTML = `<div class="status-error">Failed to generate 1098: ${errorData.message || 'Unknown error'}</div>`;
         }
     } catch (error) {
         console.error('Error generating 1098:', error);
-        alert('Error generating 1098 form');
+        document.getElementById('form1098Status').innerHTML = '<div class="status-error">Error generating 1098 form</div>';
     }
 }
 
@@ -312,14 +347,45 @@ function display1098Results(form1098Data) {
     container.innerHTML = `
         <div class="data-display">
             <h4>Generated 1098 Form</h4>
-            <p><strong>Mortgage Interest:</strong> $${form1098Data.mortgageInterest}</p>
-            <p><strong>Points Paid:</strong> $${form1098Data.pointsPaid}</p>
-            <p><strong>Property Taxes:</strong> $${form1098Data.propertyTaxes}</p>
-            <p><strong>Year:</strong> ${form1098Data.year}</p>
+            <p><strong>Borrower:</strong> ${form1098Data.borrowerName || 'N/A'}</p>
+            <p><strong>Lender:</strong> ${form1098Data.lenderName || 'N/A'}</p>
+            <p><strong>Mortgage Interest Received:</strong> $${form1098Data.mortgageInterestReceived || '0.00'}</p>
+            <p><strong>Points Paid:</strong> $${form1098Data.pointsPaid || '0.00'}</p>
+            <p><strong>Mortgage Insurance Premiums:</strong> $${form1098Data.mortgageInsurancePremiums || '0.00'}</p>
+            <p><strong>Outstanding Principal:</strong> $${form1098Data.outstandingMortgagePrincipal || '0.00'}</p>
+            <p><strong>Form Year:</strong> ${form1098Data.formYear || 'N/A'}</p>
+            <button onclick="download1098PDF()" class="btn btn-primary" style="margin-top: 10px;">Download PDF</button>
         </div>
     `;
 
     document.getElementById('form1098Results').style.display = 'block';
+}
+
+async function download1098PDF() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard/download-1098`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Form1098.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } else {
+            alert('Failed to download 1098 PDF');
+        }
+    } catch (error) {
+        console.error('Error downloading 1098 PDF:', error);
+        alert('Error downloading 1098 PDF');
+    }
 }
 
 function logout() {
