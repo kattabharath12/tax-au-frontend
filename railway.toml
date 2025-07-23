@@ -1,6 +1,0 @@
-[build]
-  command = "npm install"
-
-[start]
-  command = "npm start"
-  port = 8080
