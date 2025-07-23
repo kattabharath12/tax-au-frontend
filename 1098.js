@@ -5,7 +5,7 @@ function getToken() {
 
 // Generate 1098
 document.getElementById('generate-1098-btn').addEventListener('click', async function() {
-  const res = await fetch('/api/dashboard/generate-1098', {
+  const res = await fetch('https://tax-au-backend-production.up.railway.app/api/dashboard/generate-1098', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + getToken() }
   });
@@ -21,7 +21,7 @@ document.getElementById('generate-1098-btn').addEventListener('click', async fun
 
 // Load and display 1098 data
 async function load1098Data() {
-  const res = await fetch('/api/dashboard/1098-data', {
+  const res = await fetch('https://tax-au-backend-production.up.railway.app/api/dashboard/1098-data', {
     headers: { 'Authorization': 'Bearer ' + getToken() }
   });
   const data = await res.json();
@@ -58,7 +58,7 @@ document.getElementById('form1098-data-form').addEventListener('submit', async f
     body[key] = isNaN(value) ? value : Number(value);
   }
 
-  const res = await fetch('/api/dashboard/1098-data', {
+  const res = await fetch('https://tax-au-backend-production.up.railway.app/api/dashboard/1098-data', {
     method: 'PUT',
     headers: {
       'Authorization': 'Bearer ' + getToken(),
@@ -81,7 +81,7 @@ document.getElementById('form1098-data-form').addEventListener('submit', async f
 document.getElementById('download-1098-btn').addEventListener('click', async function() {
   const msgDiv = document.getElementById('download-message');
   try {
-    const res = await fetch('/api/dashboard/download-1098', {
+    const res = await fetch('https://tax-au-backend-production.up.railway.app/api/dashboard/download-1098', {
       headers: { 'Authorization': 'Bearer ' + getToken() }
     });
     if (!res.ok) {
