@@ -8,7 +8,7 @@ document.getElementById('w2-upload-form').addEventListener('submit', async funct
   e.preventDefault();
   const fileInput = document.getElementById('w2Form');
   const formData = new FormData();
-  formData.append('w2File', fileInput.files[0]);
+formData.append('w2File', fileInput.files[0]);
 
  const res = await fetch('https://tax-au-backend-production.up.railway.app/api/dashboard/upload-w2', {
     method: 'POST',
