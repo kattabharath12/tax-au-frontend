@@ -140,9 +140,9 @@ function displayDependents(dependents) {
             <div class="dependent-info">
                 <h4>${dep.name}</h4>
                 <p>Relationship: ${dep.relationship || 'N/A'}</p>
-                <p>DOB: ${dep.dob ? new Date(dep.dob).toLocaleDateString() : 'N/A'}</p>
+                <p>DOB: ${dep.birthDate ? new Date(dep.birthDate).toLocaleDateString() : 'N/A'}</p>
             </div>
-            <button class="btn btn-secondary" onclick="removeDependent(${dep.id})">Remove</button>
+            <button class="btn btn-secondary" onclick="removeDependent('${dep.id}')">Remove</button>
         `;
         container.appendChild(depElement);
     });
@@ -162,6 +162,12 @@ async function addDependent(e) {
 
     const formData = new FormData(e.target);
     const dependentData = Object.fromEntries(formData);
+
+    // Map dob to birthDate to match backend model
+    if (dependentData.dob) {
+        dependentData.birthDate = dependentData.dob;
+        delete dependentData.dob;
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/dashboard/dependents`, {
@@ -264,7 +270,7 @@ async function uploadW2() {
         if (response.ok) {
             const result = await response.json();
             document.getElementById('w2Status').innerHTML = '<div class="status-success">W-2 uploaded successfully!</div>';
-            
+
             // Optionally extract W-2 data automatically after upload
             setTimeout(() => {
                 extractW2Data();
